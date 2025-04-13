@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-
+import uuid
 from app.models.cassandra_models import ConversationModel
 from app.schemas.conversation import ConversationResponse, PaginatedConversationResponse
 
@@ -41,7 +41,7 @@ class ConversationController:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to get conversations: {str(e)}")
     
-    async def get_conversation(self, conversation_id: int) -> ConversationResponse:
+    async def get_conversation(self, conversation_id: uuid.UUID) -> ConversationResponse:
         """
         Get a specific conversation by ID
         
@@ -59,6 +59,7 @@ class ConversationController:
             conversation = await ConversationModel.get_conversation(conversation_id)
             if not conversation:
                 raise HTTPException(status_code=404, detail="Conversation not found")
+            print(conversation)
             return ConversationResponse(**conversation)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to get conversation: {str(e)}")

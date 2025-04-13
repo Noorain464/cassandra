@@ -69,8 +69,8 @@ def create_tables(session):
     session.execute("""
         CREATE TABLE IF NOT EXISTS conversations (
             id UUID PRIMARY KEY,
-            user1_id UUID,
-            user2_id UUID,
+            user1_id INT,
+            user2_id INT,
             last_message_at TIMESTAMP,
             last_message_content TEXT
         )
@@ -80,8 +80,8 @@ def create_tables(session):
         CREATE TABLE IF NOT EXISTS messages (
             id UUID,
             conversation_id UUID,
-            sender_id UUID,
-            receiver_id UUID,
+            sender_id INT,
+            receiver_id INT,
             content TEXT,
             created_at TIMESTAMP,
             PRIMARY KEY ((conversation_id), created_at)
@@ -104,6 +104,11 @@ def main():
         create_keyspace(session)
         session.set_keyspace(CASSANDRA_KEYSPACE)
         create_tables(session)
+        # tables_to_drop = ["messages", "conversations"]
+
+        # for table in tables_to_drop:
+        #     print(f"Dropping table: {table}")
+        #     session.execute(f"DROP TABLE IF EXISTS {table};")
     
         logger.info("Cassandra initialization completed successfully.")
     except Exception as e:

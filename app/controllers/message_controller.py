@@ -27,10 +27,11 @@ class MessageController:
         # This is a stub - students will implement the actual logic
         try:
             conversation_id = await ConversationModel.create_or_get_conversation(
-                sender_id=message_data.sender_id,
-                receiver_id=message_data.receiver_id
+                user1_id=message_data.sender_id,
+                user2_id=message_data.receiver_id
             )
             
+            print("{con}")
             created_at = datetime.utcnow()
 
             # Insert into messages table
@@ -41,11 +42,11 @@ class MessageController:
                 conversation_id=conversation_id
             )
             return MessageResponse(
-                id=message_id,
-                conversation_id=conversation_id,
+                id=str(message_id),
+                conversation_id=str(conversation_id),
                 sender_id=message_data.sender_id,
                 receiver_id=message_data.receiver_id,
-                content=message_data.message_body,
+                content=message_data.content,
                 created_at=created_at
             )
         except Exception as e:
@@ -53,7 +54,7 @@ class MessageController:
     
     async def get_conversation_messages(
         self, 
-        conversation_id: int, 
+        conversation_id: uuid.UUID, 
         page: int = 1, 
         limit: int = 20
     ) -> PaginatedMessageResponse:
@@ -85,7 +86,7 @@ class MessageController:
     
     async def get_messages_before_timestamp(
         self, 
-        conversation_id: int, 
+        conversation_id: uuid.UUID, 
         before_timestamp: datetime,
         page: int = 1, 
         limit: int = 20

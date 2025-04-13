@@ -31,13 +31,20 @@ class MessageModel:
         # This is a stub - students will implement the actual logic
         created_at = datetime.utcnow()
         message_id = uuid.uuid4()
-
+        print(f"{conversation_id}")
         query = """
-        INSERT INTO messages (conversation_id, created_at, message_id, sender_id, receiver_id, content)
+        INSERT INTO messages (id, conversation_id, sender_id, receiver_id, content, created_at)
         VALUES (%s, %s, %s, %s, %s, %s)
         """
-        await cassandra_client.execute(
+        query1 = """
+        INSERT INTO conversations (id,last_message_at,last_message_content)
+        VALUES (%s, %s, %s)
+        """
+        cassandra_client.execute(
             query, (message_id, conversation_id, sender_id, receiver_id, content, created_at)
+        )
+        cassandra_client.execute(
+            query1, (conversation_id, created_at,content)
         )
         return message_id
     
@@ -53,8 +60,13 @@ class MessageModel:
         SELECT * FROM messages WHERE conversation_id = %s
         LIMIT %s
         """
-        result = await cassandra_client.execute(query, (conversation_id, limit))
-        return [row._asdict() for row in result.current_rows]
+        result = cassandra_client.execute(query, (conversation_id, limit))
+        # print(result)
+        result = [
+            {**x, "conversation_id": str(x["conversation_id"]),"id" : str(x["id"])}
+            for x in result
+        ] 
+        return result
     
     @staticmethod
     async def get_messages_before_timestamp(conversation_id: uuid.UUID, before_timestamp: datetime, limit: int = 20) -> List[dict]:
@@ -69,8 +81,12 @@ class MessageModel:
         WHERE conversation_id = %s AND created_at < %s
         LIMIT %s
         """
-        result = await cassandra_client.execute(query, (conversation_id, before_timestamp, limit))
-        return [row._asdict() for row in result.current_rows]
+        result =  cassandra_client.execute(query, (conversation_id, before_timestamp, limit))
+        result = [
+            {**x, "conversation_id": str(x["conversation_id"]),"id" : str(x["id"])}
+            for x in result
+        ]
+        return result
 
 
 class ConversationModel:
@@ -94,14 +110,28 @@ class ConversationModel:
         Students should decide what parameters are needed and how to implement pagination.
         """
         # This is a stub - students will implement the actual logic
-        query = """
+        query_user1 = """
         SELECT * FROM conversations
-        WHERE user1_id = %s OR user2_id = %s
+        WHERE user1_id = %s
         ALLOW FILTERING
         """
-        result = await cassandra_client.execute(query, (user_id, user_id))
-        rows = result.current_rows[:limit]
-        return [row._asdict() for row in rows]
+
+        query_user2 = """
+        SELECT * FROM conversations
+        WHERE user2_id = %s
+        ALLOW FILTERING
+        """
+
+        result1 = cassandra_client.execute(query_user1, (user_id,))
+        result2 = cassandra_client.execute(query_user2, (user_id,))
+
+        rows = result1 + result2
+        print(rows)
+        result = [
+            {**x, "id": str(x["id"])}
+            for x in rows
+        ]
+        return result
     
     @staticmethod
     async def get_conversation(conversation_id: uuid.UUID) -> Optional[dict]:
@@ -112,12 +142,12 @@ class ConversationModel:
         """
         # This is a stub - students will implement the actual logic
         query = """
-        SELECT * FROM conversations WHERE conversation_id = %s
+        SELECT * FROM conversations WHERE id = %s
         """
-        result = await cassandra_client.execute(query, (conversation_id,))
-        row = result.one()
-        return row._asdict() if row else None
-    
+        result =  cassandra_client.execute(query, (conversation_id,))[0]
+        print(result)
+        result["id"] = str(result["id"]) 
+        return result
     @staticmethod
     async def create_or_get_conversation(user1_id: int, user2_id: int) -> uuid.UUID:
         """
@@ -130,14 +160,17 @@ class ConversationModel:
 
         # Try to find conversation
         query = """
-        SELECT conversation_id FROM conversations
+        SELECT id FROM conversations
         WHERE user1_id = %s AND user2_id = %s
         ALLOW FILTERING
         """
-        result = await cassandra_client.execute(query, (u1, u2))
-
-        if result.one():
-            return result.one().id
+        print("getting in")
+        result =  cassandra_client.execute(query, (u1, u2))
+        if result:
+            # Return existing conversation
+            conversation = result[0]
+            # print(conversation)
+            return conversation["id"]        
 
         # Otherwise create new
         conversation_id = uuid.uuid4()
@@ -145,5 +178,5 @@ class ConversationModel:
         INSERT INTO conversations (id, user1_id, user2_id, last_message_at, last_message_content)
         VALUES (%s, %s, %s, %s, %s)
         """
-        await cassandra_client.execute(insert_query, (conversation_id, u1, u2, datetime.utcnow(), ""))
+        cassandra_client.execute(insert_query, (conversation_id, u1, u2, datetime.utcnow(), ""))
         return conversation_id 
