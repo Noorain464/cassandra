@@ -104,7 +104,7 @@ def main():
         create_keyspace(session)
         session.set_keyspace(CASSANDRA_KEYSPACE)
         create_tables(session)
-        
+    
         logger.info("Cassandra initialization completed successfully.")
     except Exception as e:
         logger.error(f"Error during initialization: {str(e)}")
