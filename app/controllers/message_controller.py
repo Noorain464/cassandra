@@ -31,25 +31,22 @@ class MessageController:
                 receiver_id=message_data.receiver_id
             )
             
-            message_id = uuid()
             created_at = datetime.utcnow()
 
             # Insert into messages table
-            await MessageModel.create_message(
-                message_id=message_id,
+            message_id = await MessageModel.create_message(
+                content=message_data.content,
+                sender_id=message_data.sender_id,
+                receiver_id=message_data.receiver_id,
+                conversation_id=conversation_id
+            )
+            return MessageResponse(
+                id=message_id,
                 conversation_id=conversation_id,
                 sender_id=message_data.sender_id,
                 receiver_id=message_data.receiver_id,
-                content=message_data.content,
+                content=message_data.message_body,
                 created_at=created_at
-            )
-            return MessageResponse(
-                conversation_id=conversation_id,
-                message_id=message_id,
-                sender_id=message_data.sender_id,
-                recipient_id=message_data.receiver_id,
-                message_body=message_data.message_body,
-                timestamp=created_at
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
@@ -75,10 +72,16 @@ class MessageController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        )
+        try:
+            messages = await MessageModel.get_conversation_messages(conversation_id, page, limit)
+            return PaginatedMessageResponse(
+                total=len(messages),
+                page=page,
+                limit=limit,
+                data=[MessageResponse(**msg) for msg in messages]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching messages: {str(e)}")
     
     async def get_messages_before_timestamp(
         self, 
@@ -103,7 +106,17 @@ class MessageController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        ) 
+        try:
+            messages = await MessageModel.get_messages_before_timestamp(
+                conversation_id=conversation_id,
+                before_timestamp=before_timestamp,
+                limit=limit
+            )
+            return PaginatedMessageResponse(
+                total=len(messages),
+                page=page,
+                limit=limit,
+                data=[MessageResponse(**msg) for msg in messages]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching messages: {str(e)}")

@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from app.models.cassandra_models import ConversationModel
 from app.schemas.conversation import ConversationResponse, PaginatedConversationResponse
 
 class ConversationController:
@@ -29,10 +30,16 @@ class ConversationController:
             HTTPException: If user not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        )
+        try:
+            conversations = await ConversationModel.get_user_conversations(user_id, limit)
+            return PaginatedConversationResponse(
+                total=len(conversations),
+                page=page,
+                limit=limit,
+                data=[ConversationResponse(**c) for c in conversations]
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to get conversations: {str(e)}")
     
     async def get_conversation(self, conversation_id: int) -> ConversationResponse:
         """
@@ -48,7 +55,10 @@ class ConversationController:
             HTTPException: If conversation not found or access denied
         """
         # This is a stub - students will implement the actual logic
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Method not implemented"
-        ) 
+        try:
+            conversation = await ConversationModel.get_conversation(conversation_id)
+            if not conversation:
+                raise HTTPException(status_code=404, detail="Conversation not found")
+            return ConversationResponse(**conversation)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to get conversation: {str(e)}")

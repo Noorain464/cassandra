@@ -37,7 +37,7 @@ class MessageModel:
         VALUES (%s, %s, %s, %s, %s, %s)
         """
         await cassandra_client.execute(
-            query, (conversation_id, created_at, message_id, sender_id, receiver_id, content)
+            query, (message_id, conversation_id, sender_id, receiver_id, content, created_at)
         )
         return message_id
     
@@ -137,13 +137,13 @@ class ConversationModel:
         result = await cassandra_client.execute(query, (u1, u2))
 
         if result.one():
-            return result.one().conversation_id
+            return result.one().id
 
         # Otherwise create new
         conversation_id = uuid.uuid4()
         insert_query = """
-        INSERT INTO conversations (conversation_id, user1_id, user2_id, last_message_at)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO conversations (id, user1_id, user2_id, last_message_at, last_message_content)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        await cassandra_client.execute(insert_query, (conversation_id, u1, u2, datetime.utcnow()))
+        await cassandra_client.execute(insert_query, (conversation_id, u1, u2, datetime.utcnow(), ""))
         return conversation_id 

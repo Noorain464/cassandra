@@ -67,32 +67,25 @@ def create_tables(session):
     # - What should be the primary keys and clustering columns?
     # - How will you handle pagination and time-based queries?
     session.execute("""
-        CREATE TABLE users (
-            user_id UUID,
-            email TEXT,
-            password TEXT,
-            time_created TIMESTAMP,
-            PRIMARY KEY(user_id)
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INT PRIMARY KEY,
+            user1_id INT,
+            user2_id INT,
+            last_message_at TIMESTAMP,
+            last_message_content TEXT
         )
     """)
+
     session.execute("""
-        CREATE TABLE conversations (
-            user_id UUID,
-            conversation_id UUID,
-            last_message_timestamp TIMESTAMP,
-            PRIMARY KEY (user_id, last_message_timestamp)
-        ) WITH CLUSTERING ORDER BY (last_message_timestamp DESC);
-    """)
-    session.execute("""
-        CREATE TABLE messages (
-            conversation_id UUID,
-            message_id UUID,
-            sender_id UUID,
-            recipient_id UUID,
-            message_body TEXT,
-            timestamp TIMESTAMP,
-            PRIMARY KEY ((conversation_id), timestamp)
-        ) WITH CLUSTERING ORDER BY (timestamp DESC);
+        CREATE TABLE IF NOT EXISTS messages (
+            id INT,
+            conversation_id INT,
+            sender_id INT,
+            receiver_id INT,
+            content TEXT,
+            created_at TIMESTAMP,
+            PRIMARY KEY ((conversation_id), created_at)
+        ) WITH CLUSTERING ORDER BY (created_at DESC)
     """)
     logger.info("Tables created successfully.")
 
