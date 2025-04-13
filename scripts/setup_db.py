@@ -68,9 +68,9 @@ def create_tables(session):
     # - How will you handle pagination and time-based queries?
     session.execute("""
         CREATE TABLE IF NOT EXISTS conversations (
-            id INT PRIMARY KEY,
-            user1_id INT,
-            user2_id INT,
+            id UUID PRIMARY KEY,
+            user1_id UUID,
+            user2_id UUID,
             last_message_at TIMESTAMP,
             last_message_content TEXT
         )
@@ -78,10 +78,10 @@ def create_tables(session):
 
     session.execute("""
         CREATE TABLE IF NOT EXISTS messages (
-            id INT,
-            conversation_id INT,
-            sender_id INT,
-            receiver_id INT,
+            id UUID,
+            conversation_id UUID,
+            sender_id UUID,
+            receiver_id UUID,
             content TEXT,
             created_at TIMESTAMP,
             PRIMARY KEY ((conversation_id), created_at)

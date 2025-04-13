@@ -52,6 +52,37 @@ def generate_test_data(session):
     # 2. Create conversations between random pairs of users
     # 3. For each conversation, generate a random number of messages
     # 4. Update relevant tables to maintain data consistency
+      # Step 1: Create user UUIDs
+    user_ids = [uuid.uuid4() for _ in range(NUM_USERS)]
+
+    # Step 2: Create conversations between random pairs
+    conversation_ids = []
+    for _ in range(NUM_CONVERSATIONS):
+        user1, user2 = random.sample(user_ids, 2)
+        conversation_id = uuid.uuid4()
+        conversation_ids.append((conversation_id, user1, user2))
+
+        last_message_at = datetime.utcnow()
+        last_message_content = "Initial message"
+
+        session.execute("""
+            INSERT INTO conversations (id, user1_id, user2_id, last_message_at, last_message_content)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (conversation_id, user1, user2, last_message_at, last_message_content))
+
+        # Step 3: Generate messages
+        num_messages = random.randint(1, MAX_MESSAGES_PER_CONVERSATION)
+        for i in range(num_messages):
+            message_id = uuid.uuid4()
+            sender_id, receiver_id = random.sample([user1, user2], 2)
+            content = f"Test message {i + 1}"
+            created_at = datetime.utcnow() - timedelta(minutes=random.randint(0, 10000))
+
+            session.execute("""
+                INSERT INTO messages (id, conversation_id, sender_id, receiver_id, content, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (message_id, conversation_id, sender_id, receiver_id, content, created_at))
+
     
     logger.info(f"Generated {NUM_CONVERSATIONS} conversations with messages")
     logger.info(f"User IDs range from 1 to {NUM_USERS}")
